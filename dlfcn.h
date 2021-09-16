@@ -1,18 +1,18 @@
 #pragma once
 
 // some helpers
-#define DL_CAT(X, Y) DL_CA_(X, Y)
-#define DL_CA_(X, Y) DL_C__(X, Y)
-#define DL_C__(X, Y) X##Y
-#define DL_STR(X)    DL_ST_(X)
-#define DL_ST_(X)    #X
+#define DL_CAT(X, Y)  DL_CA_(X, Y)
+#define DL_CA_(X, Y)  DL_C__(X, Y)
+#define DL_C__(X, Y)  X##Y
+#define DL_STR(X)     DL_ST_(X)
+#define DL_ST_(X)     #X
 
 #if defined(__COUNTER__)
-    #define DL_UID(N)   DL_CAT(N, __COUNTER__)
+    #define DL_UID(N) DL_CAT(N, __COUNTER__)
 #endif
 
 #if !defined(DL_UID)
-    #define DL_UID(N)   DL_CAT(N, __LINE__)
+    #define DL_UID(N) DL_CAT(N, __LINE__)
 #endif
 
 // interface
