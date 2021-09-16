@@ -1,7 +1,6 @@
 #include "dlfcn.h"
 
 #include <string>
-#include <string_view>
 #include <unordered_map>
 
 namespace {
@@ -55,3 +54,14 @@ extern "C" int stub_dlclose(void*) {
 extern "C" char* stub_dlerror(void) {
     return (char*)"not found";
 }
+
+extern "C" void stub_dlregister(const char* lib, const char* symbol, void* ptr) {
+    (*handles())[lib][symbol] = ptr;
+}
+
+DL_LIB("dl")
+DL_SYM("dlopen",  stub_dlopen)
+DL_SYM("dlsym",   stub_dlsym)
+DL_SYM("dlclose", stub_dlclose)
+DL_SYM("dlerror", stub_dlerror)
+DL_END()

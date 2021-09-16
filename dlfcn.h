@@ -1,5 +1,21 @@
 #pragma once
 
+// some helpers
+#define DL_CAT(X, Y)   DL_CAT_(X, Y)
+#define DL_CAT_(X, Y)  DL_CAT__(X, Y)
+#define DL_CAT__(X, Y) X##Y
+#define DL_STR(X)      DL_STR_(X)
+#define DL_STR_(X)     #X
+
+#if defined(__COUNTER__)
+    #define DL_UID(N)   DL_CAT(N, __COUNTER__)
+#endif
+
+#if !defined(DL_UID)
+    #define DL_UID(N)   DL_CAT(N, __LINE__)
+#endif
+
+// interface
 #define RTLD_LAZY     1
 #define RTLD_NOW      2
 #define RTLD_GLOBAL   4
@@ -25,7 +41,23 @@ void* stub_dlsym(void* handle, const char* symbol);
 void* stub_dlopen(const char* filename, int flags);
 int   stub_dlclose(void* handle);
 char* stub_dlerror(void);
+void  stub_dlregister(const char* lib, const char* symbol, void* ptr);
 
 #if defined(__cplusplus)
 }
 #endif
+
+#define DL_LIB(name)                                \
+    namespace {                                     \
+        static const char* LIB_NAME = DL_STR(name); \
+                                                    \
+        static struct Reg {                         \
+            inline Reg() {                          \
+
+#define DL_SYM(name, ptr) \
+                stub_dlregister(LIB_NAME, DL_STR(name), (void*)ptr);
+
+#define DL_END()   \
+            };     \
+        } LIB_REG; \
+    }
