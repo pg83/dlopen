@@ -46,20 +46,19 @@ void  stub_dlregister(const char* lib, const char* symbol, void* ptr);
 }
 #endif
 
-#define DL_LIB(name)                                \
-    namespace {                                     \
-        static const char* LIB_NAME = DL_STR(name); \
-                                                    \
-        static struct Reg {                         \
-            inline Reg() {                          \
+#define DL_LIB(name)                    \
+    namespace { namespace DL_UID(Reg) { \
+        static struct Reg {             \
+            inline Reg() {              \
+                const char* LIB = name; \
 
 #define DL_S_2(name, ptr) \
-                stub_dlregister(LIB_NAME, name, (void*)ptr);
+                stub_dlregister(LIB, name, (void*)ptr);
 
 #define DL_S_1(name) \
                 DL_S_2(DL_STR(name), name)
 
-#define DL_END()   \
-            };     \
+#define DL_END()           \
+            };             \
         } LIB_REG; \
-    }
+    }}
