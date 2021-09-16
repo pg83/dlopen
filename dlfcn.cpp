@@ -1,12 +1,17 @@
 #include "dlfcn.h"
 
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace {
-    struct Handle: public std::unordered_map<std::string, void*> {
-        inline void* symbol(const std::string& s) const noexcept {
-            if (auto it = find(s); it != end()) {
+    struct IfaceHandle {
+        virtual void* lookup(const std::string_view& s) const noexcept = 0;
+    };
+
+    struct Handle: public IfaceHandle, public std::unordered_map<std::string, void*> {
+        void* lookup(const std::string_view& s) const noexcept override {
+            if (auto it = find(std::string(s)); it != end()) {
                 return it->second;
             }
 
@@ -15,9 +20,6 @@ namespace {
     };
 
     struct Handles: public std::unordered_map<std::string, Handle> {
-        inline Handles() {
-            (*this)[""];
-        }
     };
 
     static inline Handles* handles() noexcept {
@@ -26,8 +28,26 @@ namespace {
         return &h;
     }
 
-    static inline Handle* findHandle(const std::string& s) {
-        if (auto it = handles()->find(s); it != handles()->end()) {
+    struct DefaultHandle: public IfaceHandle {
+        void* lookup(const std::string_view& s) const noexcept override {
+            for (const auto& it : *handles()) {
+                if (auto res = it.second.lookup(s); res) {
+                    return res;
+                }
+            }
+
+            return 0;
+        }
+    };
+
+    static inline IfaceHandle* findHandle(const std::string_view& s) {
+        if (s == std::string_view()) {
+            static DefaultHandle dh;
+
+            return &dh;
+        }
+
+        if (auto it = handles()->find(std::string(s)); it != handles()->end()) {
             return &it->second;
         }
 
@@ -35,12 +55,8 @@ namespace {
     }
 }
 
-extern "C" void* stub_dldefault() {
-    return stub_dlopen("", 0);
-}
-
 extern "C" void* stub_dlsym(void* handle, const char* symbol) {
-    return ((Handle*)handle)->symbol(symbol);
+    return ((IfaceHandle*)handle)->lookup(symbol);
 }
 
 extern "C" void* stub_dlopen(const char* filename, int) {
@@ -60,8 +76,8 @@ extern "C" void stub_dlregister(const char* lib, const char* symbol, void* ptr) 
 }
 
 DL_LIB("dl")
-DL_SYM("dlopen",  stub_dlopen)
-DL_SYM("dlsym",   stub_dlsym)
-DL_SYM("dlclose", stub_dlclose)
-DL_SYM("dlerror", stub_dlerror)
+DL_S_2("dlopen", dlopen)
+DL_S_2("dlsym", dlsym)
+DL_S_2("dlclose", dlclose)
+DL_S_2("dlerror", dlerror)
 DL_END()

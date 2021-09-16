@@ -24,8 +24,8 @@
 #define RTLD_NOLOAD   32
 #define RTLD_DEEPBIND 64
 
-#define RTLD_DEFAULT  (stub_dldefault())
-#define RTLD_NEXT     (stub_dldefault())
+#define RTLD_NEXT     RTLD_DEFAULT
+#define RTLD_DEFAULT  (stub_dlopen("", 0))
 
 #define dlsym         stub_dlsym
 #define dlopen        stub_dlopen
@@ -36,7 +36,6 @@
 extern "C" {
 #endif
 
-void* stub_dldefault();
 void* stub_dlsym(void* handle, const char* symbol);
 void* stub_dlopen(const char* filename, int flags);
 int   stub_dlclose(void* handle);
@@ -54,8 +53,11 @@ void  stub_dlregister(const char* lib, const char* symbol, void* ptr);
         static struct Reg {                         \
             inline Reg() {                          \
 
-#define DL_SYM(name, ptr) \
-                stub_dlregister(LIB_NAME, DL_STR(name), (void*)ptr);
+#define DL_S_2(name, ptr) \
+                stub_dlregister(LIB_NAME, name, (void*)ptr);
+
+#define DL_S_1(name) \
+                DL_S_2(DL_STR(name), name)
 
 #define DL_END()   \
             };     \
