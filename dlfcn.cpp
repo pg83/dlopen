@@ -15,52 +15,61 @@ namespace {
                 return it->second;
             }
 
-            return 0;
+            return nullptr;
         }
     };
 
-    struct Handles: public std::unordered_map<std::string, Handle> {
-    };
-
-    static inline Handles* handles() noexcept {
-        static Handles h;
-
-        return &h;
-    }
-
-    struct DefaultHandle: public IfaceHandle {
+    struct Handles: public IfaceHandle, public std::unordered_map<std::string, Handle> {
+        // default handle lookup
         void* lookup(const std::string_view& s) const noexcept override {
-            for (const auto& it : *handles()) {
+            for (const auto& it : *this) {
                 if (auto res = it.second.lookup(s); res) {
                     return res;
                 }
             }
 
-            return 0;
+            return nullptr;
+        }
+
+        inline IfaceHandle* findHandle(const std::string_view& s) {
+            if (s.empty()) {
+                // this implements default handle
+                return this;
+            }
+
+            if (auto it = find(std::string(s)); it != end()) {
+                return &it->second;
+            }
+
+            return nullptr;
+        }
+
+        inline void registar(const char* lib, const char* symbol, void* ptr) noexcept {
+            (*this)[lib][symbol] = ptr;
+        }
+
+        static inline Handles* instance() noexcept {
+            static Handles h;
+
+            return &h;
         }
     };
-
-    static inline IfaceHandle* findHandle(const std::string_view& s) {
-        if (s == std::string_view()) {
-            static DefaultHandle dh;
-
-            return &dh;
-        }
-
-        if (auto it = handles()->find(std::string(s)); it != handles()->end()) {
-            return &it->second;
-        }
-
-        return nullptr;
-    }
 }
 
 extern "C" void* stub_dlsym(void* handle, const char* symbol) {
-    return ((IfaceHandle*)handle)->lookup(symbol);
+    if (handle) {
+        return ((IfaceHandle*)handle)->lookup(symbol);
+    }
+
+    return 0;
 }
 
 extern "C" void* stub_dlopen(const char* filename, int) {
-    return findHandle(filename);
+    if (!filename) {
+        filename = "";
+    }
+
+    return Handles::instance()->findHandle(filename);
 }
 
 extern "C" int stub_dlclose(void*) {
@@ -72,7 +81,7 @@ extern "C" char* stub_dlerror(void) {
 }
 
 extern "C" void stub_dlregister(const char* lib, const char* symbol, void* ptr) {
-    (*handles())[lib][symbol] = ptr;
+    Handles::instance()->registar(lib, symbol, ptr);
 }
 
 DL_LIB("dl")

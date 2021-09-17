@@ -25,7 +25,7 @@
 #define RTLD_DEEPBIND 64
 
 #define RTLD_NEXT     RTLD_DEFAULT
-#define RTLD_DEFAULT  (stub_dlopen("", 0))
+#define RTLD_DEFAULT  stub_dlopen(0, 0)
 
 #define dlsym         stub_dlsym
 #define dlopen        stub_dlopen
@@ -50,10 +50,10 @@ void  stub_dlregister(const char* lib, const char* symbol, void* ptr);
     namespace { namespace DL_UID(Reg) { \
         static struct Reg {             \
             inline Reg() {              \
-                const char* LIB = name; \
+                const char* lib = name; \
 
 #define DL_S_2(name, ptr) \
-                stub_dlregister(LIB, name, (void*)ptr);
+                stub_dlregister(lib, name, (void*)ptr);
 
 #define DL_S_1(name) \
                 DL_S_2(DL_STR(name), name)
