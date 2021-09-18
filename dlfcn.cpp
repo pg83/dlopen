@@ -49,30 +49,60 @@ namespace {
             return &h;
         }
     };
+
+    static thread_local const char* DL_ERROR = nullptr;
+
+    static inline void setLastError(const char* err) {
+        DL_ERROR = err;
+    }
+
+    static auto lastError() noexcept {
+        auto ret = DL_ERROR;
+
+        DL_ERROR = nullptr;
+
+        return ret;
+    }
 }
 
 extern "C" void* stub_dlsym(void* handle, const char* symbol) {
+    lastError();
+
     if (handle) {
-        return ((IfaceHandle*)handle)->lookup(symbol);
+        if (auto ret = ((IfaceHandle*)handle)->lookup(symbol); ret) {
+            return ret;
+        }
     }
+
+    setLastError("symbol not found");
 
     return 0;
 }
 
 extern "C" void* stub_dlopen(const char* filename, int) {
+    lastError();
+
     if (!filename) {
         filename = "";
     }
 
-    return Handles::instance()->findHandle(filename);
+    if (auto ret = Handles::instance()->findHandle(filename); ret) {
+        return ret;
+    }
+
+    setLastError("library not found");
+
+    return 0;
 }
 
 extern "C" int stub_dlclose(void*) {
+    lastError();
+
     return 0;
 }
 
 extern "C" char* stub_dlerror(void) {
-    return (char*)"not found";
+    return (char*)lastError();
 }
 
 extern "C" void stub_dlregister(const char* lib, const char* symbol, void* ptr) {
