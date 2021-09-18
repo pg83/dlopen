@@ -36,7 +36,7 @@ namespace {
                 return &it->second;
             }
 
-            return nullptr;
+            return this;
         }
 
         inline void registar(const char* lib, const char* symbol, void* ptr) noexcept {
