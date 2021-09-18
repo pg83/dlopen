@@ -32,11 +32,6 @@ namespace {
         }
 
         inline IfaceHandle* findHandle(const std::string_view& s) {
-            if (s.empty()) {
-                // this implements default handle
-                return this;
-            }
-
             if (auto it = find(std::string(s)); it != end()) {
                 return &it->second;
             }
