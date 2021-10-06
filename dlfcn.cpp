@@ -109,9 +109,14 @@ extern "C" void stub_dlregister(const char* lib, const char* symbol, void* ptr) 
     Handles::instance()->registar(lib, symbol, ptr);
 }
 
+extern "C" int stub_dladdr(void* /*addr*/, Dl_info* /*info*/) {
+    return 0;
+}
+
 DL_LIB("dl")
-DL_S_2("dlopen", dlopen)
-DL_S_2("dlsym", dlsym)
-DL_S_2("dlclose", dlclose)
-DL_S_2("dlerror", dlerror)
+DL_S_2("dlopen", stub_dlopen)
+DL_S_2("dlsym", stub_dlsym)
+DL_S_2("dlclose", stub_dlclose)
+DL_S_2("dlerror", stub_dlerror)
+DL_S_2("dladdr", stub_dladdr)
 DL_END()

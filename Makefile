@@ -5,7 +5,7 @@ libdl.a: dlfcn.o Makefile
 	ar q libdl.a dlfcn.o
 
 dlfcn.o: dlfcn.cpp dlfcn.h Makefile
-	$(CC) -std=c++20 $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) -c -o dlfcn.o dlfcn.cpp
+	$(CC) -DCOMPILE_DLOPEN -std=c++20 $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) -c -o dlfcn.o dlfcn.cpp
 
 install: all
 	mkdir -p $(PREFIX)/lib
