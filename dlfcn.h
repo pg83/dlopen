@@ -51,7 +51,7 @@ void* stub_dlopen(const char* filename, int flags);
 int   stub_dlclose(void* handle);
 char* stub_dlerror(void);
 void  stub_dlregister(const char* lib, const char* symbol, void* ptr);
-int   stub_dladdr(void* addr, Dl_info* info);
+int   stub_dladdr(const void* addr, Dl_info* info);
 
 #if defined(__cplusplus)
 }

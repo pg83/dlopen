@@ -109,7 +109,7 @@ extern "C" void stub_dlregister(const char* lib, const char* symbol, void* ptr) 
     Handles::instance()->registar(lib, symbol, ptr);
 }
 
-extern "C" int stub_dladdr(void* /*addr*/, Dl_info* /*info*/) {
+extern "C" int stub_dladdr(const void* /*addr*/, Dl_info* /*info*/) {
     return 0;
 }
 
