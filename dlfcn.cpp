@@ -1,10 +1,47 @@
 #include "dlfcn.h"
 
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include <string>
 #include <string_view>
 #include <unordered_map>
 
 namespace {
+    struct Dbg {
+        inline void out(const void* buf, size_t len) noexcept {
+            write(1, buf, len);
+        }
+
+        inline void out(const char* s) noexcept {
+            out(s, strlen(s));
+        }
+
+        inline void out(std::string_view s) noexcept {
+            out(s.data(), s.size());
+        }
+
+        template <typename T>
+        inline auto& operator<<(T s) noexcept {
+            out(s);
+
+            return *this;
+        }
+    };
+
+    static inline bool debugEnabled() {
+        static const bool enabled = getenv("DL_STUB_DEBUG");
+
+        return enabled;
+    }
+
+#define DBG(X) \
+    if (debugEnabled()) { \
+        Dbg d;            \
+        d << X << "\n";   \
+    }
+
     struct IfaceHandle {
         virtual void* lookup(const std::string_view& s) const noexcept = 0;
     };
@@ -12,8 +49,12 @@ namespace {
     struct Handle: public IfaceHandle, public std::unordered_map<std::string, void*> {
         void* lookup(const std::string_view& s) const noexcept override {
             if (auto it = find(std::string(s)); it != end()) {
+                DBG("found " << s);
+
                 return it->second;
             }
+
+            DBG("not found " << s);
 
             return nullptr;
         }
@@ -24,22 +65,32 @@ namespace {
         void* lookup(const std::string_view& s) const noexcept override {
             for (const auto& it : *this) {
                 if (auto res = it.second.lookup(s); res) {
+                    DBG("found global " << s);
+
                     return res;
                 }
             }
+
+            DBG("not found global " << s);
 
             return nullptr;
         }
 
         inline IfaceHandle* findHandle(const std::string_view& s) {
             if (auto it = find(std::string(s)); it != end()) {
+                DBG("found handle " << s);
+
                 return &it->second;
             }
+
+            DBG("not found handle " << s << ", will use global lookup");
 
             return this;
         }
 
         inline void registar(const char* lib, const char* symbol, void* ptr) noexcept {
+            DBG("register " << lib << ", " << symbol);
+
             (*this)[lib][symbol] = ptr;
         }
 

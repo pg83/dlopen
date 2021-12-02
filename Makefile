@@ -15,4 +15,4 @@ install: all
 
 test: test.cpp libdl.a Makefile
 	$(CC) -std=c++20 $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) $(LDFLAGS) ./libdl.a ./test.cpp ./libdl.a -o test
-	./test
+	DL_STUB_DEBUG=1 ./test
