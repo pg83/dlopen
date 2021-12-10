@@ -204,6 +204,10 @@ extern "C" void* stub_dlopen(const char* filename, int mode) {
     }
 
     if (mode & RTLD_LOCAL) {
+        if (auto res = Handles::instance()->findHandle(filename); res) {
+            return res;
+        }
+
         if (auto res = Handles::instance()->findHandle(calcName(filename)); res) {
             return res;
         }
