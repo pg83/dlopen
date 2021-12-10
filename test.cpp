@@ -32,4 +32,10 @@ int main() {
     } else {
         abortMe("no expected error");
     }
+
+    auto h = dlopen("/lib/libc.so", RTLD_LOCAL);
+
+    if (!h) {
+        abortMe("bad so");
+    }
 }

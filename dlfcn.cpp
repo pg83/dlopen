@@ -15,7 +15,15 @@ namespace {
         }
 
         inline void out(const char* s) noexcept {
+            if (!s) {
+                s = "(null)";
+            }
+
             out(s, strlen(s));
+        }
+
+        inline void out(int i) noexcept {
+            out(std::to_string(i));
         }
 
         inline void out(std::string_view s) noexcept {
@@ -76,16 +84,18 @@ namespace {
             return nullptr;
         }
 
-        inline IfaceHandle* findHandle(const std::string_view& s) {
-            if (auto it = find(std::string(s)); it != end()) {
+        inline IfaceHandle* findHandle(const std::string& s) {
+            DBG("try open handle " << s);
+
+            if (auto it = find(s); it != end()) {
                 DBG("found handle " << s);
 
                 return &it->second;
             }
 
-            DBG("not found handle " << s << ", will use global lookup");
+            DBG("not found handle " << s);
 
-            return this;
+            return nullptr;
         }
 
         inline void registar(const char* lib, const char* symbol, void* ptr) noexcept {
@@ -114,6 +124,48 @@ namespace {
 
         return ret;
     }
+
+    static std::string baseName(const std::string& s) {
+        std::string r;
+
+        for (char ch : s) {
+            if (ch == '/') {
+                r.clear();
+            } else {
+                r.push_back(ch);
+            }
+        }
+
+        return r;
+    }
+
+    static inline std::string cutPrefix(const std::string& s, const std::string& prefix) {
+        if (s.size() > prefix.size()) {
+            if (s.substr(0, prefix.size()) == prefix) {
+                return s.substr(prefix.size());
+            }
+        }
+
+        return s;
+    }
+
+    static inline std::string cutExt(const std::string& s) {
+        std::string r;
+
+        for (char ch : s) {
+            if (ch == '.') {
+                break;
+            }
+
+            r.push_back(ch);
+        }
+
+        return r;
+    }
+
+    static std::string calcName(const std::string& s) {
+        return cutExt(cutPrefix(baseName(s), "lib"));
+    }
 }
 
 extern "C" void* stub_dlsym(void* handle, const char* symbol) {
@@ -130,15 +182,31 @@ extern "C" void* stub_dlsym(void* handle, const char* symbol) {
     return 0;
 }
 
-extern "C" void* stub_dlopen(const char* filename, int) {
+extern "C" void* stub_dlopen(const char* filename, int mode) {
     lastError();
+
+    DBG("dlopen " << filename << " " << mode);
+
+    if (!mode) {
+        mode = RTLD_LOCAL;
+    }
 
     if (!filename) {
         filename = "";
     }
 
-    if (auto ret = Handles::instance()->findHandle(filename); ret) {
-        return ret;
+    if (strcmp(filename, "") == 0) {
+        return Handles::instance();
+    }
+
+    if (mode & RTLD_GLOBAL) {
+        return Handles::instance();
+    }
+
+    if (mode & RTLD_LOCAL) {
+        if (auto res = Handles::instance()->findHandle(calcName(filename)); res) {
+            return res;
+        }
     }
 
     setLastError("library not found");
@@ -165,6 +233,14 @@ extern "C" int stub_dladdr(const void* /*addr*/, Dl_info* /*info*/) {
 }
 
 DL_LIB("dl")
+DL_S_2("dlopen", stub_dlopen)
+DL_S_2("dlsym", stub_dlsym)
+DL_S_2("dlclose", stub_dlclose)
+DL_S_2("dlerror", stub_dlerror)
+DL_S_2("dladdr", stub_dladdr)
+DL_END()
+
+DL_LIB("c")
 DL_S_2("dlopen", stub_dlopen)
 DL_S_2("dlsym", stub_dlsym)
 DL_S_2("dlclose", stub_dlclose)
