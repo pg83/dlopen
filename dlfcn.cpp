@@ -187,10 +187,6 @@ extern "C" void* stub_dlopen(const char* filename, int mode) {
 
     DBG("dlopen " << filename << " " << mode);
 
-    if (!mode) {
-        mode = RTLD_LOCAL;
-    }
-
     if (!filename) {
         filename = "";
     }
@@ -203,14 +199,12 @@ extern "C" void* stub_dlopen(const char* filename, int mode) {
         return Handles::instance();
     }
 
-    if (mode & RTLD_LOCAL) {
-        if (auto res = Handles::instance()->findHandle(filename); res) {
-            return res;
-        }
+    if (auto res = Handles::instance()->findHandle(filename); res) {
+        return res;
+    }
 
-        if (auto res = Handles::instance()->findHandle(calcName(filename)); res) {
-            return res;
-        }
+    if (auto res = Handles::instance()->findHandle(calcName(filename)); res) {
+        return res;
     }
 
     setLastError("library not found");
