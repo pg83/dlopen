@@ -105,9 +105,9 @@ namespace {
         }
 
         static inline Handles* instance() noexcept {
-            static Handles h;
+            static Handles* h = new Handles();
 
-            return &h;
+            return h;
         }
     };
 
